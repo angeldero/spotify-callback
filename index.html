@@ -1,0 +1,13 @@
+<!doctype html>
+<html>
+  <meta charset="utf-8">
+  <title>Spotify Callback</title>
+  <script>
+    (function () {
+      if (window.opener && location.hash) {
+        window.opener.postMessage({ source: 'spotify-auth', hash: location.hash }, '*');
+      }
+      document.write('You can close this window.');
+    })();
+  </script>
+</html>
