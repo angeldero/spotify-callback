@@ -1,32 +1,30 @@
 <!doctype html>
 <html>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   <title>Spotify Callback</title>
   <script>
     (function () {
-      // Muestra algo visible siempre
+      // Muestra algo por si se abre directo
       document.write('You can close this window.');
 
-      // Si venimos de Spotify OAuth, el token va en el hash (#access_token=...)
-      if (location.hash) {
-        // Enviamos el token a la ventana que abrió el login (userscript en open.spotify.com)
-        try {
-          if (window.opener) {
-            const payload = { source: 'spotify-auth', hash: location.hash };
-            // 1) comodín (más permisivo)
-            window.opener.postMessage(payload, '*');
-            // 2) origen explícito (algunos navegadores extienden políticas)
-            window.opener.postMessage(payload, 'https://open.spotify.com');
-            // 3) log de depuración
-            console.log('[callback] posted to opener', payload);
-          } else {
-            console.warn('[callback] no window.opener; ¿has abierto el callback en una pestaña normal?');
-          }
-        } catch (e) {
-          console.error('[callback] postMessage error', e);
+      // Recoge tanto ?code=... como #error=...
+      const payload = { source: 'spotify-auth' };
+      try {
+        const q = new URLSearchParams(location.search);
+        const h = new URLSearchParams(location.hash.replace(/^#/, ''));
+        if (q.get('code')) payload.code = q.get('code');
+        if (q.get('state')) payload.state = q.get('state');
+        if (h.get('error')) payload.error = h.get('error'); // por compatibilidad
+        if (window.opener) {
+          // Enviamos al opener (Spotify Web con el userscript)
+          window.opener.postMessage(payload, '*');
+          window.opener.postMessage(payload, 'https://open.spotify.com');
+          console.log('[callback] posted', payload);
+        } else {
+          console.warn('[callback] No opener; ¿abriste esta URL a mano?');
         }
-      } else {
-        console.warn('[callback] no hash en la URL; ¿ha vuelto realmente desde accounts.spotify.com?');
+      } catch (e) {
+        console.error('[callback] Error', e);
       }
     })();
   </script>
