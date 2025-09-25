@@ -4,10 +4,30 @@
   <title>Spotify Callback</title>
   <script>
     (function () {
-      if (window.opener && location.hash) {
-        window.opener.postMessage({ source: 'spotify-auth', hash: location.hash }, '*');
-      }
+      // Muestra algo visible siempre
       document.write('You can close this window.');
+
+      // Si venimos de Spotify OAuth, el token va en el hash (#access_token=...)
+      if (location.hash) {
+        // Enviamos el token a la ventana que abrió el login (userscript en open.spotify.com)
+        try {
+          if (window.opener) {
+            const payload = { source: 'spotify-auth', hash: location.hash };
+            // 1) comodín (más permisivo)
+            window.opener.postMessage(payload, '*');
+            // 2) origen explícito (algunos navegadores extienden políticas)
+            window.opener.postMessage(payload, 'https://open.spotify.com');
+            // 3) log de depuración
+            console.log('[callback] posted to opener', payload);
+          } else {
+            console.warn('[callback] no window.opener; ¿has abierto el callback en una pestaña normal?');
+          }
+        } catch (e) {
+          console.error('[callback] postMessage error', e);
+        }
+      } else {
+        console.warn('[callback] no hash en la URL; ¿ha vuelto realmente desde accounts.spotify.com?');
+      }
     })();
   </script>
 </html>
